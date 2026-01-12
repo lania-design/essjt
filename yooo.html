@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isaha n'Ibarura ry'Igihe Rigufi</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Guhindura Imvange y'Amabara (Color Palette) */
+        :root {
+            --dark-background: #1e1e2f; 
+            --main-color: #00bcd4; /* Cyan Ikeye (Neon Blue) */
+            --accent-color-start: #ff7f50; 
+            --accent-color-end: #ff6b81; 
+            --text-color: #f0f8ff; 
+            --secondary-text: #b3b3c2;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--dark-background); 
+            font-family: 'Montserrat', sans-serif; 
+            color: var(--text-color);
+            text-align: center;
+            overflow-x: hidden; /* Gukora Ibiryoheye Ijisho */
+        }
+        
+        .container {
+            padding: 30px;
+            border: 3px solid var(--main-color); 
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0, 188, 212, 0.7);
+            margin-bottom: 30px; 
+            min-width: 380px; 
+            background-color: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(5px); 
+            opacity: 0; 
+            animation: fadeIn 1s ease-out forwards;
+            position: relative; /* Kugira ngo Ibiryoheye Ijisho bidahindura uburyo byanditsemo */
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .clock-container { animation-delay: 0.2s; }
+        .countdown-style { animation-delay: 0.5s; }
+
+        .time-style {
+            font-size: 5rem; 
+            font-weight: 700; 
+            letter-spacing: 5px; 
+            color: var(--text-color); 
+            text-shadow: 0 0 7px var(--main-color), 0 0 15px var(--main-color);
+            margin-top: 5px; 
+        }
+        
+        .day-style {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            color: var(--secondary-text);
+        }
+
+        .countdown-style {
+            background: linear-gradient(135deg, var(--accent-color-start), var(--accent-color-end));
+            border: none;
+            box-shadow: 0 0 30px rgba(255, 111, 129, 0.8); 
+        }
+        
+        .countdown-style h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.3rem; 
+            text-transform: uppercase;
+        }
+
+        #countdown-display {
+             display: flex;
+             justify-content: center;
+             gap: 20px; 
+        }
+        
+        .countdown-time-unit .value {
+            font-size: 3.8rem; 
+            font-weight: 900;
+            display: block;
+        }
+        .countdown-time-unit .label {
+             font-size: 0.9rem;
+             display: block;
+             margin-top: -10px;
+        }
+
+        /* -------------------------------------- */
+        /* FIREWORKS / CONFETTI EFFECT STYLING */
+        /* -------------------------------------- */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Byemerera umukoresha gukanda ibiri inyuma */
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: transparent;
+            border-radius: 50%;
+            opacity: 0;
+            transform: translateY(0);
+            box-shadow: 0 0 5px currentColor, 0 0 10px currentColor; /* Neon Glow */
+        }
+
+        @keyframes sparkle-fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="confetti-holder" class="confetti-container" style="display:none;"></div>
+
+    <div class="container clock-container">
+        <div id="day-display" class="day-style"></div>
+        <div id="time-display" class="time-style"></div>
+    </div>
+    
+    <div class="container countdown-style">
+        <h2>IMINSI ISIGAYE KUGEZA IMODOKA IKUGEREHO:</h2>
+        <div id="countdown-display">
+            </div>
+        <p id="target-date-info" class="day-style"></p>
+    </div>
+
+    <script>
+        // --- IGENZURAMIKORERE (CONFIG) ---
+        // Igihe cy'Ibihindagurika (Random Duration)
+        function getRandomTargetDate() {
+            const now = new Date();
+            const minMinutes = 30; 
+            const maxMinutes = 3 * 8888; // 180 min
+            const randomMinutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
+            const randomDurationMs = randomMinutes * 60 * 1000;
+            return new Date(now.getTime() + randomDurationMs);
+        }
+        
+        // Kugira ngo byorohereze kugerageza Alert (Iminota 1-5)
+        const TEST_MINUTES_MIN = 1;
+        const TEST_MINUTES_MAX = 2;
+        const randomTestMinutes = Math.floor(Math.random() * (TEST_MINUTES_MAX - TEST_MINUTES_MIN + 1)) + TEST_MINUTES_MIN;
+        const targetDate = new Date(new Date().getTime() + randomTestMinutes * 60 * 1000); 
+        // ------------------------------------
+
+        // References to DOM Elements
+        const DOM = {
+            dayDisplay: document.getElementById('day-display'),
+            timeDisplay: document.getElementById('time-display'),
+            countdownDisplay: document.getElementById('countdown-display'),
+            targetDateInfo: document.getElementById('target-date-info'),
+            confettiHolder: document.getElementById('confetti-holder') // Nshya
+        };
+        
+        const daysOfWeek = ['Ku Cyumweru', 'Kuwa Mbere', 'Kuwa Kabiri', 'Kuwa Gatatu', 'Kuwa Kane', 'Kuwa Gatabatu', 'Kuwa Gatandatu'];
+        let alertTriggered = false;
+        
+        // Kugaragaza itariki igarukiraho
+        const targetDateOptions = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        };
+        DOM.targetDateInfo.textContent = `Itariki y'Igezeho (Random): ${targetDate.toLocaleDateString('rw-RW', targetDateOptions)}`;
+
+        // --- Umurimo w'Ibiryoheye Ijisho ---
+        function launchConfetti() {
+            DOM.confettiHolder.style.display = 'block';
+            const colors = ['#00bcd4', '#ff7f50', '#f1c40f', '#2ecc71', '#9b59b6']; // Neon Colors
+            
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = Math.random() * 100 + 'vh';
+                confetti.style.width = Math.random() * 5 + 5 + 'px'; // Size
+                confetti.style.height = confetti.style.width; 
+                confetti.style.animation = `sparkle-fall ${Math.random() * 3 + 2}s linear forwards`; // Time
+
+                // Gukoresha 'currentColor' kugira ngo neon shadow ijyane n'ibara
+                confetti.style.color = confetti.style.backgroundColor; 
+                
+                DOM.confettiHolder.appendChild(confetti);
+
+                // Gukuraho ibiryoheye ijisho nyuma y'igihe runaka
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000); // Animation imara amasegonda 5
+            }
+        }
+
+        // --- Umurimo Mukuru Wahujwe (Merged Main Function) ---
+        function updateAll() {
+            const now = new Date();
+            
+            // 1. DIGITAL CLOCK UPDATE
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            
+            hours = String(hours).padStart(2, '0');
+            minutes = String(minutes).padStart(2, '0');
+            seconds = String(seconds).padStart(2, '0');
+
+            const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+            DOM.timeDisplay.textContent = timeString;
+
+            const dayIndex = now.getDay();
+            DOM.dayDisplay.textContent = daysOfWeek[dayIndex];
+            
+            // 2. COUNTDOWN UPDATE & ALERT CHECK
+            let distance = targetDate.getTime() - now.getTime();
+            let countdownHTML = "";
+
+            if (distance < 0) {
+                DOM.countdownDisplay.innerHTML = '<div class="countdown-time-unit"><span class="value">YAGEZE!</span></div>';
+                
+                // Kugaragaza Alert n'Ibiryoheye Ijisho
+                if (!alertTriggered) {
+                    alert("YAGEZE! Ushobora kuza gutora imodoka yawe!");
+                    launchConfetti(); // Kugaragaza Ibiryoheye Ijisho
+                    alertTriggered = true; 
+                    
+                    // Gukuraho Ibiryoheye Ijisho nyuma yo gukoresha
+                    setTimeout(() => {
+                        DOM.confettiHolder.style.display = 'none';
+                        DOM.confettiHolder.innerHTML = '';
+                    }, 5000); 
+                }
+                return;
+            }
+
+            const ONE_SECOND_MS = 1000;
+            const ONE_MINUTE_MS = ONE_SECOND_MS * 60;
+            const ONE_HOUR_MS = ONE_MINUTE_MS * 60;
+            const ONE_DAY_MS = ONE_HOUR_MS * 24;
+
+            // Kubara igihe gisigaye
+            const days = Math.floor(distance / ONE_DAY_MS);
+            distance %= ONE_DAY_MS;
+            
+            const countdownHours = Math.floor(distance / ONE_HOUR_MS);
+            distance %= ONE_HOUR_MS;
+            
+            const countdownMinutes = Math.floor(distance / ONE_MINUTE_MS);
+            distance %= ONE_MINUTE_MS; 
+            const countdownSeconds = Math.floor(distance / ONE_SECOND_MS); 
+
+            // Gushyiramo HTML nshya 
+            if (days > 0) {
+                 countdownHTML += `<div class="countdown-time-unit"><span class="value">${days}</span><span class="label">IMINSI</span></div>`;
+            }
+
+            countdownHTML += `<div class="countdown-time-unit"><span class="value">${countdownHours}</span><span class="label">AMASAHA</span></div>`;
+            countdownHTML += `<div class="countdown-time-unit"><span class="value">${countdownMinutes}</span><span class="label">IMINOTA</span></div>`;
+            countdownHTML += `<div class="countdown-time-unit"><span class="value">${countdownSeconds}</span><span class="label">ASEGONDA</span></div>`;
+            
+            DOM.countdownDisplay.innerHTML = countdownHTML;
+        }
+
+        // Gutangiza Isaha n'Ibarura
+        updateAll();
+
+        // Gusubiramo buri segonda (1000ms)
+        setInterval(updateAll, 1000); 
+
+    </script>
+</body>
+</html>
